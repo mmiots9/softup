@@ -65,7 +65,7 @@ def github_search(package_name: str) -> tuple[str, bool]:
     return (latest_version, stable, URL)
 
 
-def main(packages_dict: dict, verbose: bool = True) -> None:
+def main(packages_dict: dict,  package_file: str, verbose: bool = True) -> None:
     source_dict = {"pypi": pypi_search, 
                    "cran": cran_search,
                    "bioconductor": bioconductor_search,
@@ -87,6 +87,9 @@ def main(packages_dict: dict, verbose: bool = True) -> None:
             if verbose:
                 logger.info(f'Pre-release {latest_v} found for {package}')
             continue
+        if not stable:
+            logger.warning(f'No new versions found for {package}')
+            continue
         if p_dict.get("stable", "") != latest_v:
             p_dict["stable"] = latest_v
             p_dict['link'] = link
@@ -98,10 +101,12 @@ def main(packages_dict: dict, verbose: bool = True) -> None:
         if verbose:
             logger.warning(f'No new versions found for {package}')
 
-    # TODO: send mail
-    # TODO: update file
+
+    # update file
+    with open(package_file, "w") as pf:
+        json.dump(packages_dict, pf, indent=4)
 
 if __name__ == '__main__':
     with open("packages.json", "r") as pf:
         packages_dict = json.load(pf)
-    main(packages_dict)
+    main(packages_dict, verbose=True, package_file = "packages.json")
