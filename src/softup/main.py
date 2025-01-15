@@ -3,11 +3,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 
-# TODO: CRAN function
-# TODO: bioconductor function
 # other function
-# TODO: github function
-
 
 def pypi_search(package_name: str) -> tuple[str, bool]:
     URL = f'https://pypi.org/project/{package_name}/#history'
@@ -43,11 +39,23 @@ def bioconductor_search(package_name: str) -> tuple[str, bool]:
     stable = False if "pre-release" in latest_version else True
     return (latest_version, stable, URL)
 
+def github_search(package_name: str) -> tuple[str, bool]:
+    URL = f'https://github.com/{package_name}/releases.html'
+    page = requests.get(URL)
+    if page.status_code != 200:
+        raise IndexError
+    soup = BeautifulSoup(page.content, "html.parser")
+    div_parent = soup.find("span", string= lambda text: text == "Latest").parent.parent.parent.parent
+    latest_version = div_parent.find("a", href=re.compile('.*/releases/tag/.*')).text
+    stable = False if "pre-release" in latest_version else True
+    return (latest_version, stable, URL)
+
 
 def main(packages_dict: dict) -> None:
     source_dict = {"pypi": pypi_search, 
                    "cran": cran_search,
-                   "bioconductor": bioconductor_search}
+                   "bioconductor": bioconductor_search,
+                   "github": github_search}
     update_dict = {}
     error_list = []
     for package, p_dict in packages_dict.items():
@@ -79,4 +87,3 @@ if __name__ == '__main__':
     with open("packages.json", "r") as pf:
         packages_dict = json.load(pf)
     main(packages_dict)
-
