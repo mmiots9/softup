@@ -19,9 +19,6 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 logger.setLevel("INFO")
 
-
-
-
 def pypi_search(package_name: str) -> tuple[str, bool]:
     URL = f'https://pypi.org/project/{package_name}/#history'
     page = requests.get(URL)
@@ -68,7 +65,7 @@ def github_search(package_name: str) -> tuple[str, bool]:
     return (latest_version, stable, URL)
 
 
-def main(packages_dict: dict) -> None:
+def main(packages_dict: dict, verbose: bool = True) -> None:
     source_dict = {"pypi": pypi_search, 
                    "cran": cran_search,
                    "bioconductor": bioconductor_search,
@@ -79,23 +76,27 @@ def main(packages_dict: dict) -> None:
         try:
             latest_v, stable, link = source_dict[p_dict.get("source")](package)
         except IndexError:
-            logger.warning(f"No info found for package {package}") # TODO: transform to log
+            if verbose:
+                logger.warning(f"No info found for package {package}")
             error_list.append(package)
             continue
         if not stable and (p_dict.get("pre-release", "") != latest_v):
             p_dict["pre-release"] = latest_v
             p_dict['link'] = link
             update_dict[package] = {"stable": False}
-            logger.info(f'Pre-release {latest_v} found for {package}') # TODO: transform to log
+            if verbose:
+                logger.info(f'Pre-release {latest_v} found for {package}')
             continue
         if p_dict.get("stable", "") != latest_v:
             p_dict["stable"] = latest_v
             p_dict['link'] = link
             update_dict[package] = {"stable": False}
-            logger.info(f'Stable release {latest_v} found for {package}') # TODO: transform to log
+            if verbose:
+                logger.info(f'Stable release {latest_v} found for {package}')
             continue
 
-        logger.warning(f'No new versions found for {package}') # TODO: transform to log
+        if verbose:
+            logger.warning(f'No new versions found for {package}')
 
     # TODO: send mail
     # TODO: update file
