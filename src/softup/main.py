@@ -1,9 +1,26 @@
 import re
 import json
 import requests
+
+import logging
+
 from bs4 import BeautifulSoup
 
 # other function
+
+logger = logging.getLogger(__name__)
+
+console_handler = logging.StreamHandler()
+formatter = logging.Formatter("{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M")
+console_handler.setFormatter(formatter)
+
+logger.addHandler(console_handler)
+logger.setLevel("INFO")
+
+
+
 
 def pypi_search(package_name: str) -> tuple[str, bool]:
     URL = f'https://pypi.org/project/{package_name}/#history'
@@ -62,23 +79,23 @@ def main(packages_dict: dict) -> None:
         try:
             latest_v, stable, link = source_dict[p_dict.get("source")](package)
         except IndexError:
-            print(f"No info found for package {package}") # TODO: transform to log
+            logger.warning(f"No info found for package {package}") # TODO: transform to log
             error_list.append(package)
             continue
         if not stable and (p_dict.get("pre-release", "") != latest_v):
             p_dict["pre-release"] = latest_v
             p_dict['link'] = link
             update_dict[package] = {"stable": False}
-            print(f'Pre-release {latest_v} found for {package}') # TODO: transform to log
+            logger.info(f'Pre-release {latest_v} found for {package}') # TODO: transform to log
             continue
         if p_dict.get("stable", "") != latest_v:
             p_dict["stable"] = latest_v
             p_dict['link'] = link
             update_dict[package] = {"stable": False}
-            print(f'Stable release {latest_v} found for {package}') # TODO: transform to log
+            logger.info(f'Stable release {latest_v} found for {package}') # TODO: transform to log
             continue
 
-        print(f'No new versions found for {package}') # TODO: transform to log
+        logger.warning(f'No new versions found for {package}') # TODO: transform to log
 
     # TODO: send mail
     # TODO: update file
